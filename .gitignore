@@ -1,0 +1,8 @@
+.DS_Store
+target
+project/boot
+project/target
+battleships.sublime-workspace
+.ensime_port
+.history
+
