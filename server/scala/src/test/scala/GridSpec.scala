@@ -18,8 +18,8 @@ class ActionsSpec extends Specification with ScalaCheck with GridActions { def i
                                                                       endp^
   "Checking if a all ships in a grid have been sunk should"           ^
     "report true if the grid is empty"                                ! emptyGridIsDefeated^
-    "report true if all placed positions have been hit"               ! pending^
-    "report false any placed position has not been hit"               ! pending^
+    "report true if all placed positions have been hit"               ! gridWithAllShipsSunkIsDefeated^
+    "report false any placed position has not been hit"               ! gridWithShipsAfloatIsNotDefeated^
                                                                       endp^ 
   "Placing ship parts into a grid should"                             ^
     "update the specified position on the grid with the ship name"    ! placeShipPartUpdatesCell^           
@@ -79,6 +79,26 @@ class ActionsSpec extends Specification with ScalaCheck with GridActions { def i
 
   def emptyGridIsDefeated = isDefeated(startingGrid) must beTrue
 
+  def gridWithAllShipsSunkIsDefeated = forAll(positions, positions) { (position1: Ref, position2: Ref) => position1 != position2 ==> {
+    handleFailureOf {
+      for {
+        placedOne <- placeShipPart(position1, "USS Enterprise", startingGrid)
+        placedTwo <- placeShipPart(position2, "USS Enterprise", placedOne)
+        hitOne <- probe(position1, placedTwo)
+        hitTwo <- probe(position2, hitOne._2)
+      } yield isDefeated(hitTwo._2) must beTrue
+    }
+  }}
+
+  def gridWithShipsAfloatIsNotDefeated = forAll(positions, positions) { (position1: Ref, position2: Ref) => position1 != position2 ==> {
+    handleFailureOf {
+      for {
+        placedOne <- placeShipPart(position1, "USS Enterprise", startingGrid)
+        placedTwo <- placeShipPart(position2, "USS Enterprise", placedOne)
+        hitOne <- probe(position1, placedTwo)
+      } yield isDefeated(hitOne._2) must beFalse
+    }
+  }}
 
 
   def placeShipPartUpdatesCell = forAll(positions, shipNames) { (position: Ref, shipName: String) => handleFailureOf {
