@@ -5,7 +5,7 @@ import org.specs2.ScalaCheck
 import org.specs2.matcher.MatchResult
 import org.scalacheck._
 
-class ActionsSpec extends Specification with ScalaCheck with Actions { def is =
+class ActionsSpec extends Specification with ScalaCheck with GridActions { def is =
 
   "Specification for the Actions that manipulate a Battleships grid"  ^
                                                                       endp^
@@ -38,7 +38,7 @@ class ActionsSpec extends Specification with ScalaCheck with Actions { def is =
 
   import Prop.forAll
   import Arbitrary.arbitrary
-  import Domain._
+  import GridModel._
 
   private val widths1 = Gen.choose(1, 250)
   private val heights1 = Gen.choose(1, 250)
