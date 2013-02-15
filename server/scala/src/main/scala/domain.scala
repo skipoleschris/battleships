@@ -13,7 +13,9 @@ object Domain {
 	case object Miss extends ProbeStatus
 	case object Hit extends ProbeStatus
 
-	case class Cell(content: CellContent, status: ProbeStatus)
+	case class Cell(content: CellContent, status: ProbeStatus) {
+    def isAfloat = content != Empty && status == Unprobed
+  }
 
 	type Column = Seq[Cell]
 

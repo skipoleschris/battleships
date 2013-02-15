@@ -17,6 +17,8 @@ trait Actions {
     }
   }
 
+  def isDefeated(grid: Grid) = (grid.columns.flatten find (_.isAfloat)).isEmpty
+
   def placeShipPart(at: Ref, shipId: ShipId, grid: Grid): Validation[ErrorMessage, Grid] = againstValidRef(at, grid) {
     val lens = columnsL andThen indexedItemReplacementL(at.columnIndex) andThen indexedItemReplacementL(at.rowIndex) andThen contentL    
     lens.mod(_ => Occupied(shipId), grid).success

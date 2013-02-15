@@ -16,6 +16,11 @@ class ActionsSpec extends Specification with ScalaCheck with Actions { def is =
     "error if trying to create a grid less than width 1"              ! invalidWidthCreateGrid^                                  
     "error if trying to create a grid less than height 1"             ! invalidHeightCreateGrid^                                  
                                                                       endp^
+  "Checking if a all ships in a grid have been sunk should"           ^
+    "report true if the grid is empty"                                ! emptyGridIsDefeated^
+    "report true if all placed positions have been hit"               ! pending^
+    "report false any placed position has not been hit"               ! pending^
+                                                                      endp^ 
   "Placing ship parts into a grid should"                             ^
     "update the specified position on the grid with the ship name"    ! placeShipPartUpdatesCell^           
     "not modify any cells in the grid other than the one specified"   ! placeShipPartDoesNotChangeOtherCells^     
@@ -70,6 +75,11 @@ class ActionsSpec extends Specification with ScalaCheck with Actions { def is =
   private val startingGrid = createGrid(20, 20) fold (failWithException, identity)
   private val positions = Gen.oneOf(allRefs(20, 20))
   private val shipNames = arbitrary[String]
+
+
+  def emptyGridIsDefeated = isDefeated(startingGrid) must beTrue
+
+
 
   def placeShipPartUpdatesCell = forAll(positions, shipNames) { (position: Ref, shipName: String) => handleFailureOf {
     placeShipPart(position, shipName, startingGrid) map { grid => 
