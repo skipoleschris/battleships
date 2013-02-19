@@ -19,6 +19,8 @@ object GridModel {
     def isAfloat = content != Empty && status == Unprobed
   }
 
+  val EmptyCell = Cell(Empty, Unprobed)
+
   type Column = Seq[Cell]
 
   case class Grid(width: Int, height: Int, columns: Seq[Column])
@@ -40,7 +42,7 @@ trait GridActions {
     if (width < 1 || height < 1) "The grid must be at least 1 x 1 in size".fail
     else {
       val columns = for (col <- 0 until width) yield {
-        (for (row <- 0 until height) yield Cell(Empty, Unprobed))
+        (for (row <- 0 until height) yield EmptyCell)
       } 
 
       Grid(width, height, columns).success
@@ -51,7 +53,7 @@ trait GridActions {
 
   protected def placeShipPart(at: Ref, shipId: ShipId, grid: Grid): Validation[ErrorMessage, Grid] = againstValidRef(at, grid) {
     val lens = columnsL andThen indexedItemReplacementL(at.columnIndex) andThen indexedItemReplacementL(at.rowIndex) andThen contentL    
-    lens.mod(_ => Occupied(shipId), grid).success
+    lens.set(grid, Occupied(shipId)).success
   }
 
   protected def probe(at: Ref, grid: Grid): Validation[ErrorMessage, (ProbeResult, Grid)] = againstValidRef(at, grid) {
@@ -62,9 +64,9 @@ trait GridActions {
     else {
       contentLens.get(grid) match {
         case Occupied(shipId) => 
-          val newGrid = statusLens.mod(_ => Hit, grid)
+          val newGrid = statusLens.set(grid, Hit)
           (ProbeResult(Hit, if (isSunk(shipId, newGrid)) Some(shipId) else None), newGrid).success
-        case _ => (ProbeResult(Miss), statusLens.mod(_ => Miss, grid)).success
+        case _ => (ProbeResult(Miss), statusLens.set(grid, Miss)).success
       }
     }
   }

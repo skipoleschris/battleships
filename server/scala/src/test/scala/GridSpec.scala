@@ -5,7 +5,7 @@ import org.specs2.ScalaCheck
 import org.specs2.matcher.MatchResult
 import org.scalacheck._
 
-class ActionsSpec extends Specification with ScalaCheck with GridActions { def is =
+class GridSpec extends Specification with ScalaCheck with GridActions with Generators with FailureHandling { def is =
 
   "Specification for the Actions that manipulate a Battleships grid"  ^
                                                                       endp^
@@ -40,8 +40,6 @@ class ActionsSpec extends Specification with ScalaCheck with GridActions { def i
   import Arbitrary.arbitrary
   import GridModel._
 
-  private val widths1 = Gen.choose(1, 250)
-  private val heights1 = Gen.choose(1, 250)
 
   def createGridOfSpecifiedWidth = forAll(widths1, heights1) { (width: Int, height: Int) => handleFailureOf {
     createGrid(width, height) map { grid =>
@@ -49,21 +47,15 @@ class ActionsSpec extends Specification with ScalaCheck with GridActions { def i
     }
   }}
 
-  private val widths2 = Gen.choose(1, 250)
-  private val heights2 = Gen.choose(1, 250)
-
   def createGridOfSpecifiedHeight = forAll(widths2, heights2) { (width: Int, height: Int) => handleFailureOf {
     createGrid(width, height) map { grid =>
       (grid.height must_== height) and ((grid.columns forall (_.size == height)) must beTrue)
     }
   }}
 
-  private val widths3 = Gen.choose(1, 250)
-  private val heights3 = Gen.choose(1, 250)
-
   def createGridOfEmptyUnprobedCells = forAll(widths3, heights3) { (width: Int, height: Int) => handleFailureOf {
     createGrid(width, height) map { grid =>
-      grid.columns forall (_ forall (_ == Cell(Empty, Unprobed))) must beTrue
+      grid.columns forall (_ forall (_ == EmptyCell)) must beTrue
     }
   }}
 
@@ -73,9 +65,6 @@ class ActionsSpec extends Specification with ScalaCheck with GridActions { def i
 
 
   private val startingGrid = createGrid(20, 20) fold (failWithException, identity)
-  private val positions = Gen.oneOf(allRefs(20, 20))
-  private val shipNames = arbitrary[String]
-
 
   def emptyGridIsDefeated = isDefeated(startingGrid) must beTrue
 
@@ -101,15 +90,15 @@ class ActionsSpec extends Specification with ScalaCheck with GridActions { def i
   }}
 
 
-  def placeShipPartUpdatesCell = forAll(positions, shipNames) { (position: Ref, shipName: String) => handleFailureOf {
-    placeShipPart(position, shipName, startingGrid) map { grid => 
-      grid.columns(position.columnIndex).apply(position.rowIndex) must_== Cell(Occupied(shipName), Unprobed)
+  def placeShipPartUpdatesCell = forAll(positions, shipIds) { (position: Ref, shipId: ShipId) => handleFailureOf {
+    placeShipPart(position, shipId, startingGrid) map { grid => 
+      grid.columns(position.columnIndex).apply(position.rowIndex) must_== Cell(Occupied(shipId), Unprobed)
     }
   }}
 
   def placeShipPartDoesNotChangeOtherCells = forAll(positions) { (position: Ref) => handleFailureOf {
     placeShipPart(position, "USS Enterprise", startingGrid) map { grid => 
-      grid.columns.flatten count (_ != Cell(Empty, Unprobed)) must_== 1
+      grid.columns.flatten count (_ != EmptyCell) must_== 1
     }
   }}
   
@@ -128,7 +117,7 @@ class ActionsSpec extends Specification with ScalaCheck with GridActions { def i
 
   def probeDoesNotChangeOtherCells = forAll(positions) { (position: Ref) => handleFailureOf {
     probe(position, startingGrid) map { probeResult =>
-      probeResult._2.columns.flatten count (_ != Cell(Empty, Unprobed)) must_== 1
+      probeResult._2.columns.flatten count (_ != EmptyCell) must_== 1
     }
   }}
 
@@ -164,15 +153,4 @@ class ActionsSpec extends Specification with ScalaCheck with GridActions { def i
   def invalidReferenceProbe = check { (column: Int, row: Int) => (column < 1 || column > 20 || row < 1 || row > 20) ==> {
     probe(Ref(column, row), startingGrid) must_== scalaz.Failure("A position reference must be between (1 and 20, 1 and 20)")
   }}
-
-
-
-  private def allRefs(width: Int, height: Int) = for {
-    column <- 1 to width
-    row <- 1 to height
-  } yield Ref(column, row)
-
-  private def handleFailureOf(f: => scalaz.Validation[ErrorMessage, MatchResult[Any]]): MatchResult[Any] = f fold (failWithMessage, identity)
-  private def failWithMessage(message: ErrorMessage) = message must_== ""
-  private def failWithException(message: ErrorMessage) = throw new IllegalStateException(message)
 }
