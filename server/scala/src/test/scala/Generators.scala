@@ -25,12 +25,12 @@ trait Generators {
   protected val shipIds = arbitrary[ShipId]
   protected val players = Gen.oneOf(Player1, Player2)
 
-  private def allRefs(width: Int, height: Int) = for {
+  protected def allRefs(width: Int, height: Int) = for {
     column <- 1 to width
     row <- 1 to height
   } yield Ref(column, row)
 
-  private def allNonEdgeRefs(width: Int, height: Int) = for {
+  protected def allNonEdgeRefs(width: Int, height: Int) = for {
     column <- 2 until width 
     row <- 2 until height
   } yield Ref(column, row)

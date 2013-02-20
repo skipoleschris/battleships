@@ -20,7 +20,9 @@ object GameModel {
   case object Player1 extends Player
   case object Player2 extends Player
 
-  case class Game[T <: GameStatus](player1Grid: Grid, player2Grid: Grid)
+  case class Guess(position: Ref, result: ProbeResult)
+
+  case class Game[T <: GameStatus](player1Grid: Grid, player2Grid: Grid, lastGuess: Option[Guess] = None)
 }
 
 trait GameActions {
@@ -78,14 +80,15 @@ trait GameActions {
     val lens = if (player == Player1) player2GridL[T1] else player1GridL[T1]
     probe(position, lens.get(game)) map { result =>
       val (probeResult, grid) = result
-      val updatedGame = lens.set(game, grid)
+      val updatedGame = lastGuessL.set(lens.set(game, grid), Some(Guess(position, probeResult)))
       if ( isDefeated(grid) ) Left(changeState[Finished.type](updatedGame))
       else Right((probeResult, changeState[T2](updatedGame)))
     } 
   }
 
 
-  private def changeState[T <: GameStatus](game: Game[_]) = Game[T](game.player1Grid, game.player2Grid)
+  private def changeState[T <: GameStatus](game: Game[_]) = Game[T](game.player1Grid, game.player2Grid, game.lastGuess)
   private def player1GridL[T <: GameStatus]: Lens[Game[T], Grid] = Lens.lensu((game, newGrid) => game.copy(player1Grid = newGrid), _.player1Grid)
   private def player2GridL[T <: GameStatus]: Lens[Game[T], Grid] = Lens.lensu((game, newGrid) => game.copy(player2Grid = newGrid), _.player2Grid)
+  private def lastGuessL[T <: GameStatus]: Lens[Game[T], Option[Guess]] = Lens.lensu((game, newLastGuess) => game.copy(lastGuess = newLastGuess), _.lastGuess)
 }
